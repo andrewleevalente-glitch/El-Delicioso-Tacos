@@ -1,0 +1,370 @@
+# This workflow will build and push a new container image to Amazon ECR,
+# and then will deploy a new task definition to Amazon ECS, when there is a push to the "main" branch.
+#
+# To use this workflow, you will need to complete the following set-up steps:
+#
+# 1. Create an ECR repository to s<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Delicioso Street Tacos | Authentic Tacos in Iowa</title>
+    <meta name="description" content="El Delicioso Street Tacos - The best authentic Mexican street tacos in Iowa. Found on Facebook, loved by locals. Order now for fresh Al Pastor, Asada, and Carnitas.">
+    <meta name="keywords" content="El Delicioso Street Tacos Iowa, Best tacos near me Iowa, Mexican Food Truck Des Moines">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#B91C1C', // Deep Red
+                        accent: '#F59E0B',  // Amber/Orange
+                        surface: '#FFFBF7', // Off-white
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #FFFBF7; color: #1F2937; }
+        .hero-gradient { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)); }
+        .modal-active { overflow: hidden; }
+    </style>
+</head>
+<body class="font-sans">
+
+    <script>
+        const TRUCK_CONFIG = {
+            businessStatus: "open", // Options: "open" or "closed"
+            currentLocation: "Des Moines, IA (8th & Walnut)",
+            cityServed: "Des Moines",
+            facebookUrl: "https://facebook.com/eldeliciosotacos", // Replace with real URL
+            schedule: [
+                { day: "Mon-Tue", hours: "11AM - 7PM" },
+                { day: "Wed-Sat", hours: "11AM - 9PM" },
+                { day: "Sunday", hours: "Closed" }
+            ],
+            menu: [
+                { id: 1, name: "Al Pastor", price: 3.50, desc: "Marinated pork with pineapple & cilantro." },
+                { id: 2, name: "Carne Asada", price: 4.00, desc: "Grilled steak with onions & salsa verde." },
+                { id: 3, name: "Carnitas", price: 3.50, desc: "Slow-cooked pork, crispy & tender." },
+                { id: 4, name: "Pollo Asado", price: 3.25, desc: "Citrus-marinated grilled chicken." },
+                { id: 5, name: "Birria Quesataco", price: 4.50, desc: "Beef birria with melted cheese & consommé." },
+                { id: 6, name: "Street Corn (Esquites)", price: 5.00, desc: "Corn off the cob, mayo, lime, & tajin." }
+            ]
+        };
+    </script>
+
+    <section class="relative h-[80vh] flex items-center justify-center text-white overflow-hidden">
+        <img src="https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&q=80&w=1200" 
+             alt="Authentic Tacos" class="absolute inset-0 w-full h-full object-cover">
+        <div class="absolute inset-0 hero-gradient"></div>
+        
+        <div class="relative z-10 text-center px-4 max-w-3xl">
+            <h1 class="font-heading text-5xl md:text-7xl mb-4 drop-shadow-lg">El Delicioso <span class="text-accent">Street Tacos</span></h1>
+            <p class="text-xl md:text-2xl mb-8 font-semibold tracking-wide">Authentic Street Tacos in <span id="hero-city">Iowa</span></p>
+            <button onclick="openModal()" class="bg-primary hover:bg-red-700 text-white font-bold py-4 px-10 rounded-full text-xl shadow-2xl transform transition hover:scale-105 uppercase tracking-wider">
+                Order Now
+            </button>
+        </div>
+    </section>
+
+    <div class="bg-white border-b border-gray-100 py-4 shadow-sm">
+        <div class="container mx-auto px-4 flex flex-wrap justify-center items-center gap-4 md:gap-8 text-sm md:text-base font-semibold text-gray-600">
+            <span class="flex items-center text-yellow-500">⭐️ 4.9 Stars</span>
+            <span class="hidden md:inline">•</span>
+            <span>Loved by 5,000+ Iowa Foodies</span>
+            <span class="hidden md:inline">•</span>
+            <span class="flex items-center gap-1">
+                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                As Seen on Facebook
+            </span>
+        </div>
+    </div>
+
+    <section class="container mx-auto px-4 -mt-10 relative z-20">
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-col md:flex-row gap-8">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="status-dot" class="w-4 h-4 rounded-full animate-pulse"></div>
+                    <span id="status-text" class="font-bold text-xl uppercase tracking-tighter"></span>
+                </div>
+                <h3 class="text-gray-500 uppercase text-xs font-bold tracking-widest mb-1">Find Us Today</h3>
+                <p id="truck-location" class="text-2xl font-heading text-gray-800 mb-4"></p>
+                <p id="urgency-msg" class="text-primary font-bold text-sm"></p>
+            </div>
+
+            <div class="flex-1 md:border-l md:pl-8">
+                <h3 class="text-gray-500 uppercase text-xs font-bold tracking-widest mb-4">This Week's Schedule</h3>
+                <div id="schedule-list" class="space-y-2">
+                    </div>
+                <a href="#" id="fb-link-status" class="inline-block mt-4 text-blue-600 font-semibold text-sm hover:underline">Verify on Facebook &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-4 py-16">
+        <h2 class="text-4xl font-heading text-center mb-4">Our Top Sellers</h2>
+        <p class="text-center text-gray-500 mb-12 italic">Hand-pressed tortillas, fresh ingredients, Iowa heart.</p>
+        
+        <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+    </section>
+
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="font-heading text-2xl mb-4 text-accent">El Delicioso</h2>
+            <p class="text-gray-400 mb-6">Proudly serving <span id="footer-city"></span>, Iowa with the freshest street tacos.</p>
+            <div class="flex justify-center gap-6 mb-8">
+                <a href="#" class="fb-link hover:text-accent transform transition hover:scale-110">Facebook</a>
+                <a href="#" class="hover:text-accent transform transition hover:scale-110">Instagram</a>
+            </div>
+            <p class="text-xs text-gray-600">&copy; 2024 El Delicioso Street Tacos. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <div id="orderModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+            <div class="bg-primary p-6 text-white flex justify-between items-center">
+                <h3 class="font-heading text-xl">Your Order</h3>
+                <button onclick="closeModal()" class="text-2xl">&times;</button>
+            </div>
+            
+            <div id="cart-items" class="p-6 max-h-[60vh] overflow-y-auto">
+                </div>
+
+            <div class="p-6 border-t border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-gray-500 font-semibold">Total Estimated:</span>
+                    <span id="cart-total" class="text-2xl font-bold text-gray-900">$0.00</span>
+                </div>
+                
+                <button onclick="completeOrder()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 transition">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    Complete Order on Facebook
+                </button>
+                <p class="text-center text-[10px] text-gray-400 mt-3">Clicking will open Facebook Messenger to finalize your order.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+
+        function init() {
+            // Update Text from Config
+            document.getElementById('hero-city').innerText = TRUCK_CONFIG.cityServed;
+            document.getElementById('footer-city').innerText = TRUCK_CONFIG.cityServed;
+            document.getElementById('truck-location').innerText = TRUCK_CONFIG.currentLocation;
+            
+            // Set FB Links
+            document.querySelectorAll('.fb-link, #fb-link-status').forEach(link => {
+                link.href = TRUCK_CONFIG.facebookUrl;
+            });
+
+            // Update Status Badge
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            const urgency = document.getElementById('urgency-msg');
+
+            if (TRUCK_CONFIG.businessStatus === "open") {
+                statusDot.classList.add('bg-green-500');
+                statusText.innerText = "OPEN - Serving Now";
+                statusText.classList.add('text-green-600');
+                urgency.innerText = "🔥 Order within 30 mins for fastest pickup!";
+            } else {
+                statusDot.classList.add('bg-red-500');
+                statusText.innerText = "CLOSED - See Schedule";
+                statusText.classList.add('text-red-600');
+            }
+
+            // Render Schedule
+            const scheduleList = document.getElementById('schedule-list');
+            TRUCK_CONFIG.schedule.forEach(item => {
+                scheduleList.innerHTML += `
+                    <div class="flex justify-between text-sm">
+                        <span class="font-bold text-gray-700">${item.day}</span>
+                        <span class="text-gray-500">${item.hours}</span>
+                    </div>
+                `;
+            });
+
+            // Render Menu
+            const menuGrid = document.getElementById('menu-grid');
+            TRUCK_CONFIG.menu.forEach(item => {
+                menuGrid.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                        <div class="h-48 rounded-xl bg-gray-200 mb-4 overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=60&w=500" alt="${item.name}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-heading text-xl">${item.name}</h3>
+                            <span class="bg-accent/10 text-accent font-bold px-2 py-1 rounded text-sm">$${item.price.toFixed(2)}</span>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-6 flex-grow">${item.desc}</p>
+                        <button onclick="addToCart(${item.id})" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-primary transition">
+                            Add to Order
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(id) {
+            const item = TRUCK_CONFIG.menu.find(m => m.id === id);
+            cart.push(item);
+            openModal();
+        }
+
+        function openModal() {
+            const modal = document.getElementById('orderModal');
+            const cartDiv = document.getElementById('cart-items');
+            const totalSpan = document.getElementById('cart-total');
+            
+            modal.classList.remove('hidden');
+            document.body.classList.add('modal-active');
+
+            if (cart.length === 0) {
+                cartDiv.innerHTML = `<p class="text-center text-gray-400 py-10">Your cart is empty. Pick some delicious tacos!</p>`;
+                totalSpan.innerText = "$0.00";
+            } else {
+                cartDiv.innerHTML = cart.map((item, index) => `
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <p class="font-bold">${item.name}</p>
+                            <p class="text-xs text-gray-400">$${item.price.toFixed(2)}</p>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 text-xs font-bold uppercase">Remove</button>
+                    </div>
+                `).join('');
+                
+                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                totalSpan.innerText = `$${total.toFixed(2)}`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            openModal();
+        }
+
+        function completeOrder() {
+            if (cart.length === 0) return alert("Add some tacos first!");
+            
+            const itemsList = cart.map(i => i.name).join(', ');
+            const message = encodeURIComponent(`Hi! I'd like to place an order from your website: ${itemsList}`);
+            
+            // Redirect to Facebook Messenger or Page
+            // The /messages/t/ is a direct link to initiate a chat with a page ID
+            window.location.href = `${TRUCK_CONFIG.facebookUrl}?text=${message}`;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+tore your images.
+#    For example: `aws ecr create-repository --repository-name my-ecr-repo --region us-east-2`.
+#    Replace the value of the `ECR_REPOSITORY` environment variable in the workflow below with your repository's name.
+#    Replace the value of the `AWS_REGION` environment variable in the workflow below with your repository's region.
+#
+# 2. Create an ECS task definition, an ECS cluster, and an ECS service.
+#    For example, follow the Getting Started guide on the ECS console:
+#      https://us-east-2.console.aws.amazon.com/ecs/home?region=us-east-2#/firstRun
+#    Replace the value of the `ECS_SERVICE` environment variable in the workflow below with the name you set for the Amazon ECS service.
+#    Replace the value of the `ECS_CLUSTER` environment variable in the workflow below with the name you set for the cluster.
+#
+# 3. Store your ECS task definition as a JSON file in your repository.
+#    The format should follow the output of `aws ecs register-task-definition --generate-cli-skeleton`.
+#    Replace the value of the `ECS_TASK_DEFINITION` environment variable in the workflow below with the path to the JSON file.
+#    Replace the value of the `CONTAINER_NAME` environment variable in the workflow below with the name of the container
+#    in the `containerDefinitions` section of the task definition.
+#
+# 4. Store an IAM user access key in GitHub Actions secrets named `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+#    See the documentation for each action used below for the recommended IAM policies for this IAM user,
+#    and best practices on handling the access key credentials.
+
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: MY_AWS_REGION                   # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: MY_ECR_REPOSITORY           # set this to your Amazon ECR repository name
+  ECS_SERVICE: MY_ECS_SERVICE                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: MY_ECS_CLUSTER                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: MY_ECS_TASK_DEFINITION # set this to the path to your Amazon ECS task definition
+                                               # file, e.g. .aws/task-definition.json
+  CONTAINER_NAME: MY_CONTAINER_NAME           # set this to the name of the container in the
+                                               # containerDefinitions section of your task definition
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
